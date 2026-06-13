@@ -6,15 +6,12 @@ BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 
 # Config ----------------------------------------------------------------------
 
-declare -A LINKS=(
-  ["zsh/.zshrc"]=".zshrc"
-  ["tmux/.tmux.conf"]=".tmux.conf"
-  ["vim/.vimrc"]=".vimrc"
-)
+# Use regular arrays for bash 3.2 compatibility (macOS)
+LINK_SOURCES=("zsh/.zshrc" "tmux/.tmux.conf" "vim/.vimrc")
+LINK_TARGETS=(".zshrc" ".tmux.conf" ".vimrc")
 
-declare -A DIR_LINKS=(
-  ["nvim"]=".config/nvim"
-)
+DIR_LINK_SOURCES=("nvim")
+DIR_LINK_TARGETS=(".config/nvim")
 
 # Helpers ---------------------------------------------------------------------
 
@@ -159,8 +156,17 @@ nvim_version() {
 }
 
 version_ge() {
-  # Returns 0 if $1 >= $2
-  printf '%s\n%s\n' "$2" "$1" | sort -V -C
+  # Returns 0 if $1 >= $2 (portable version comparison)
+  # Works on both macOS (BSD) and Linux (GNU)
+  awk -v v1="$1" -v v2="$2" 'BEGIN {
+    split(v1, a, ".");
+    split(v2, b, ".");
+    for (i = 1; i <= 2; i++) {
+      if (a[i]+0 > b[i]+0) exit 0;
+      if (a[i]+0 < b[i]+0) exit 1;
+    }
+    exit 0;
+  }'
 }
 
 install_nvim_from_release() {
@@ -237,12 +243,12 @@ install_dotfiles() {
   info "Linking dotfiles..."
   info "Backups will be stored in $BACKUP_DIR"
 
-  for src in "${!LINKS[@]}"; do
-    link_file "$src" "${LINKS[$src]}"
+  for i in "${!LINK_SOURCES[@]}"; do
+    link_file "${LINK_SOURCES[$i]}" "${LINK_TARGETS[$i]}"
   done
 
-  for src in "${!DIR_LINKS[@]}"; do
-    link_dir "$src" "${DIR_LINKS[$src]}"
+  for i in "${!DIR_LINK_SOURCES[@]}"; do
+    link_dir "${DIR_LINK_SOURCES[$i]}" "${DIR_LINK_TARGETS[$i]}"
   done
 }
 
@@ -261,10 +267,19 @@ change_default_shell() {
   zsh_path="$(command -v zsh)"
   if [[ "$SHELL" == "$zsh_path" ]]; then
     info "zsh is already the default shell"
-  else
-    info "Changing default shell to zsh..."
-    chsh -s "$zsh_path"
+    return
   fi
+
+  info "Changing default shell to zsh..."
+
+  # On macOS, the shell must be listed in /etc/shells
+  if [[ "$OS" == "macos" ]] && ! grep -qF "$zsh_path" /etc/shells 2>/dev/null; then
+    warn "$zsh_path is not in /etc/shells"
+    info "Adding $zsh_path to /etc/shells (requires sudo)..."
+    echo "$zsh_path" | sudo tee -a /etc/shells >/dev/null
+  fi
+
+  chsh -s "$zsh_path"
 }
 
 # Main ------------------------------------------------------------------------
