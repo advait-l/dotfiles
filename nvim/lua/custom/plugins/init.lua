@@ -4,6 +4,35 @@
 -- See the kickstart.nvim README for more information
 return {
   {
+    'mrcjkb/rustaceanvim',
+    version = '^6',
+    ft = { 'rust' },
+    init = function()
+      vim.g.rustaceanvim = {
+        server = {
+          default_settings = {
+            ['rust-analyzer'] = {
+              cargo = { allFeatures = true },
+              check = { command = 'clippy' },
+              procMacro = { enable = true },
+            },
+          },
+        },
+      }
+    end,
+  },
+  {
+    'saecki/crates.nvim',
+    tag = 'stable',
+    ft = { 'toml' },
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    opts = {
+      completion = {
+        cmp = { enabled = true },
+      },
+    },
+  },
+  {
     'nvimdev/lspsaga.nvim',
     event = 'LspAttach',
     opts = {
@@ -27,5 +56,10 @@ return {
         end,
       })
     end,
+  },
+  {
+    'MeanderingProgrammer/render-markdown.nvim',
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    opts = {},
   },
 }

@@ -4,6 +4,10 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+-- Add nvm node to PATH so LSP servers can find it
+local nvm_node_bin = vim.fn.expand('$HOME') .. '/.nvm/versions/node/v20.20.2/bin'
+vim.env.PATH = nvm_node_bin .. ':' .. vim.env.PATH
+
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
 
@@ -508,7 +512,7 @@ require('lazy').setup({
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
       --  See `:help lsp-config` for information about keys and how to configure
       local servers = {
-        -- clangd = {},
+        clangd = {},
         -- gopls = {},
         pyright = {},
         -- rust_analyzer = {},
@@ -535,8 +539,12 @@ require('lazy').setup({
         -- You can add other tools here that you want Mason to install
         'pyright', -- Python Language Server
         'ruff', -- Python linter/formatter
+        'clangd', -- C/C++ Language Server
+        'clang-format', -- C/C++ formatter
         'jdtls', -- Java Language Server
         'google-java-format', -- Java formatter
+        'rust-analyzer', -- Rust Language Server
+        'codelldb', -- Rust debugger adapter
       })
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -654,7 +662,7 @@ require('lazy').setup({
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
+        local disable_filetypes = {}
         if disable_filetypes[vim.bo[bufnr].filetype] then
           return nil
         else
@@ -668,11 +676,9 @@ require('lazy').setup({
         lua = { 'stylua' },
         python = { 'ruff_format' },
         java = { 'google-java-format' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        c = { 'clang_format' },
+        cpp = { 'clang_format' },
+        rust = { 'rustfmt' },
       },
     },
   },
@@ -888,7 +894,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     config = function()
-      local parsers = { 'bash', 'c', 'diff', 'html', 'java', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+      local parsers = { 'bash', 'c', 'diff', 'html', 'java', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'rust', 'toml', 'vim', 'vimdoc' }
       for _, parser in ipairs(parsers) do
         pcall(vim.treesitter.language.add, parser)
       end
@@ -907,7 +913,7 @@ require('lazy').setup({
   -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.autopairs',
   require 'kickstart.plugins.nvim-tree',
   require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
