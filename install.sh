@@ -140,8 +140,7 @@ install_core_dependencies() {
       install_pkg fd-find
       # Ubuntu/Debian installs the binary as fdfind; make it available as fd
       if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then
-        mkdir -p "$HOME/.local/bin"
-        ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+        sudo ln -sf "$(command -v fdfind)" /usr/local/bin/fd
         info "Created fd symlink for fdfind"
       fi
     else
@@ -179,16 +178,17 @@ install_nvim_from_release() {
 
   local tmpdir
   tmpdir="$(mktemp -d)"
-  trap 'rm -rf "$tmpdir"' RETURN
 
-  local latest_url
+  local latest_url extracted_dir
   latest_url="https://github.com/neovim/neovim/releases/latest/download/nvim-${tarball_arch}.tar.gz"
+  extracted_dir="/opt/nvim-${tarball_arch}"
 
   curl -fsSL -o "$tmpdir/nvim.tar.gz" "$latest_url"
-  sudo rm -rf /opt/nvim
+  sudo rm -rf /opt/nvim "$extracted_dir"
   sudo tar -C /opt -xzf "$tmpdir/nvim.tar.gz"
-  sudo mv "/opt/nvim-${tarball_arch}" /opt/nvim
+  sudo mv "$extracted_dir" /opt/nvim
   sudo ln -sf /opt/nvim/bin/nvim /usr/local/bin/nvim
+  rm -rf "$tmpdir"
   info "Neovim installed to /usr/local/bin/nvim"
 }
 
